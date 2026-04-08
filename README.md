@@ -65,11 +65,11 @@ docker run -d -p 8080:80 tayeemmanu/task-frontend
 
 Frontend UI:
 
-http://localhost:3000
+http://localhost:8080
 
 Backend API:
 
-http://localhost:5000
+http://localhost:3000
 🔌 API Endpoints
 Method	Endpoint	Description
 GET	/tasks	Get all tasks
