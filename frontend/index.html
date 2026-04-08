@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Manager</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f5f5;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin-left: 5px;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .add-btn {
+      background: #26a69a;
+      color: white;
+    }
+
+    .delete-btn {
+      background: red;
+      color: white;
+    }
+
+    .edit-btn {
+      background: orange;
+      color: white;
+    }
+
+    .done-btn {
+      background: green;
+      color: white;
+    }
+
+    .undo-btn {
+      background: gray;
+      color: white;
+    }
+
+    .clear-btn {
+      background: black;
+      color: white;
+      margin-top: 10px;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Task List</h2>
+    <input id="taskInput" placeholder="New Task">
+    <button class="add-btn" onclick="addTask()">ADD TASK</button>
+  </div>
+
+  <div class="card">
+    <h2>Tasks</h2>
+    <ul id="taskList"></ul>
+    <button class="clear-btn" onclick="clearTasks()">CLEAR TASKS</button>
+  </div>
+
+</div>
+
+<script>
+const API = "http://localhost:3000/tasks";
+
+// LOAD TASKS
+const loadTasks = async () => {
+  const res = await fetch(API);
+  const tasks = await res.json();
+
+  const list = document.getElementById("taskList");
+  list.innerHTML = "";
+
+  tasks.forEach(task => {
+    const li = document.createElement("li");
+
+    const span = document.createElement("span");
+    span.textContent = task.name;
+
+    //  Style if completed
+    if (task.completed) {
+      span.style.textDecoration = "line-through";
+      span.style.color = "gray";
+    }
+
+    // DONE / UNDO BUTTON
+    const doneBtn = document.createElement("button");
+    doneBtn.textContent = task.completed ? "Undo" : "Done";
+    doneBtn.className = task.completed ? "undo-btn" : "done-btn";
+    doneBtn.onclick = () => toggleTask(task);
+
+    // EDIT BUTTON
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.className = "edit-btn";
+    editBtn.onclick = () => editTask(task);
+
+    // DELETE BUTTON
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.className = "delete-btn";
+    delBtn.onclick = () => deleteTask(task.id);
+
+    li.appendChild(span);
+    li.appendChild(doneBtn);
+    li.appendChild(editBtn);
+    li.appendChild(delBtn);
+
+    list.appendChild(li);
+  });
+};
+
+// ADD TASK
+const addTask = async () => {
+  const input = document.getElementById("taskInput");
+
+  if (!input.value.trim()) return;
+
+  await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: input.value })
+  });
+
+  input.value = "";
+  loadTasks();
+};
+
+// DELETE TASK
+const deleteTask = async (id) => {
+  await fetch(`${API}/${id}`, { method: "DELETE" });
+  loadTasks();
+};
+
+// EDIT TASK
+const editTask = async (task) => {
+  const newName = prompt("Edit task:", task.name);
+  if (!newName) return;
+
+  await fetch(`${API}/${task.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: newName })
+  });
+
+  loadTasks();
+};
+
+// TOGGLE COMPLETE
+const toggleTask = async (task) => {
+  await fetch(`${API}/${task.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: task.name,
+      completed: !task.completed
+    })
+  });
+
+  loadTasks();
+};
+
+// CLEAR ALL
+const clearTasks = async () => {
+  const res = await fetch(API);
+  const tasks = await res.json();
+
+  await Promise.all(
+    tasks.map(t =>
+      fetch(`${API}/${t.id}`, { method: "DELETE" })
+    )
+  );
+
+  loadTasks();
+};
+
+loadTasks();
+</script>
+
+</body>
+</html>
